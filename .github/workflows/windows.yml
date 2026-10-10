@@ -1,0 +1,30 @@
+# Builds and tests the Windows app on every push; the Release exe is attached to the run.
+name: Windows build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      # CMakePresets.json builds under %LOCALAPPDATA%; keep that inside the workspace here.
+      LOCALAPPDATA: ${{ github.workspace }}\.local
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ilammy/msvc-dev-cmd@v1
+      - uses: actions/cache@v6
+        with:
+          path: .local/metronome-juce/deps
+          key: juce-${{ hashFiles('CMakeLists.txt') }}
+      - run: cmake --preset windows
+      - run: cmake --build --preset debug --target MetronomeTests
+      - run: ctest --preset debug
+      - run: cmake --build --preset release --target Metronome
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Metronome-windows
+          path: .local/metronome-juce/build/Metronome_artefacts/Release/Metronome.exe

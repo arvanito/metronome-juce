@@ -1,0 +1,5 @@
+# Build output is kept outside the repo (see CMakePresets.json), but just in case:
+build/
+out/
+.vs/
+*.user
