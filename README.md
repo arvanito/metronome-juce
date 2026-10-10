@@ -1,34 +1,47 @@
 # Metronome (JUCE)
 
-A native C++ version of the [Metronome web app](https://github.com/arvanito/metronome), built with
-[JUCE](https://juce.com). It has the same features, the same sounds and the same modular layout.
-Windows comes first; Android is next.
+The native version of the [Metronome web app](https://github.com/arvanito/metronome). It shows the
+**same web UI** in a native window, while the audio comes from a **C++/[JUCE](https://juce.com)
+engine** with sample-accurate timing. Windows comes first; Android is next.
 
-## Features
+## How it fits together
 
-- 20–300 BPM: click the number to type a tempo, −/+ (hold to repeat), slider, arrow keys (Shift = ±5)
-- Italian tempo names, tap tempo (button or `T`), `Space` to start and stop
-- Time signatures 1–16 beats per bar (over 2/4/8/16); click a beat light to set accent, normal or mute
-- Subdivisions: 8ths, triplets, 16ths
-- Nine synthesised sounds (ported from the web app), volume up to 150% with a soft limiter
-- Speed trainer, presets, audio device settings (WASAPI / ASIO)
-- Remembers everything between runs (`%APPDATA%\Metronome\Metronome.settings`)
+```
+┌──────────────── Metronome.exe ────────────────┐
+│  WebView2 window                              │
+│  └─ the web app's UI (web/ submodule),        │
+│     embedded in the exe as a zip              │
+│          ▲  "metronome" events  │             │
+│          │  beat / bar / tempo  ▼ update /    │
+│                                   start / stop│
+│  MainComponent (bridge)                       │
+│  └─ MetronomeEngine (audio callback)          │
+│     └─ Scheduler + sounds → sound card        │
+└───────────────────────────────────────────────┘
+```
 
-## Timing
-
-The web app has to schedule clicks ahead of time from a JavaScript timer. Here the
-[`Scheduler`](Source/engine/Scheduler.h) runs **inside the audio callback**: each block, it works out
-which ticks fall in that block and starts each click on its exact sample. Tick times are kept as
-fractional sample positions, so there is no drift. The tests check that playback stays within one
-sample over ten minutes. The audio thread never locks or allocates. The UI talks to it through atomics,
-and beat lights are fed by a lock-free FIFO, adjusted for output latency.
+- **One UI codebase.** The UI is the web app, included as a git submodule in [`web/`](web). In the
+  browser it uses its Web Audio engine. Inside this app it detects JUCE (`window.__JUCE__`) and uses
+  [`NativeEngine`](web/src/engine/nativeEngine.ts) instead, which forwards everything to C++. Change
+  the UI in the web repo, then update the submodule here.
+- **Native audio.** The [`Scheduler`](Source/engine/Scheduler.h) runs inside the audio callback and
+  starts every click on its exact sample, with no drift (tested to within one sample over ten minutes).
+  The audio thread never locks or allocates. The speed trainer steps the tempo there too, exactly on
+  the bar line.
+- **The bridge** ([`MainComponent`](Source/ui/MainComponent.cpp)) serves the embedded UI files to the
+  WebView and passes messages both ways: settings, start/stop and "audio settings" come from the page,
+  while heard beats, bars and trainer tempo changes go back to it.
 
 ## Building (Windows)
 
-Requirements: Visual Studio 2022 or newer with the "Desktop development with C++" workload. CMake and
-Ninja come with Visual Studio. JUCE is downloaded automatically on the first build.
+Requirements:
+- Visual Studio 2022 or newer, with the "Desktop development with C++" workload (provides CMake and Ninja)
+- Node.js 20 or newer (builds the web UI)
+
+JUCE and the WebView2 SDK are downloaded automatically.
 
 ```bat
+git clone --recurse-submodules https://github.com/arvanito/metronome-juce.git
 build.cmd            :: debug build + tests
 build.cmd release    :: optimised build
 ```
@@ -37,29 +50,32 @@ The app is at `%LOCALAPPDATA%\metronome-juce\build\Metronome_artefacts\<Debug|Re
 Build output is kept outside the source folder (see [CMakePresets.json](CMakePresets.json)), so that
 OneDrive doesn't sync gigabytes of build files.
 
+Updating the UI to the latest web app:
+
+```bat
+git submodule update --remote web
+```
+
 **VS Code:** install the recommended extensions (CMake Tools, C/C++). Open the folder, pick the
 `windows` preset, then build, run or debug from the status bar.
 
-Developer aid: `Metronome.exe --screenshot out.png [--expanded]` renders the UI to an image and quits.
+**Debugging the UI:** set `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9229`
+before starting the app, then open `edge://inspect` in Edge to get DevTools for the app's page.
 
 ## Project structure
 
 ```
 Source/
-  core/       Pure logic: rhythm, tempo, tap tempo, speed trainer, volume, settings (+ JSON)
-  engine/     Scheduler, synthesised sounds, MetronomeEngine (the audio callback)
-  ui/         AppState, Theme, Feature base class, MainComponent (window, timer, shortcuts)
-  features/   One file per feature; the list in Features.cpp decides what appears
-Tests/        Unit tests (core, scheduler, sounds, engine with a fake audio device)
+  core/     Pure logic: rhythm, tempo, tap tempo, speed trainer, volume, settings (+ JSON)
+  engine/   Scheduler, synthesised sounds, MetronomeEngine (the audio callback)
+  ui/       MainComponent: WebView host and bridge
+web/        The web app (submodule): the UI
+Tests/      Unit tests (core, scheduler, sounds, engine with a fake audio device)
 ```
 
-### Adding a feature
-
-1. Create `Source/features/MyFeature.cpp` with a class deriving from `Feature`. Implement
-   `preferredHeight()`, and optionally `stateChanged()`, `tickHeard()`, `frame()` or `shortcut()`.
-   Read and write settings through `ctx.state`.
-2. Declare `createMyFeature()` in `Features.h`, add it to the list in `Features.cpp`, and add the
-   file to `CMakeLists.txt`.
+The sounds exist in both repositories: in TypeScript for the browser, and in C++ here. The C++ port
+in [`Sounds.cpp`](Source/engine/Sounds.cpp) follows `web/src/engine/sounds.ts` line by line, so keep
+the two in step when changing a sound.
 
 ## Licence note
 

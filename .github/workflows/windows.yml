@@ -15,11 +15,16 @@ jobs:
       LOCALAPPDATA: ${{ github.workspace }}\.local
     steps:
       - uses: actions/checkout@v7
+        with:
+          submodules: true # the web UI lives in web/
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
       - uses: ilammy/msvc-dev-cmd@v1
       - uses: actions/cache@v6
         with:
           path: .local/metronome-juce/deps
-          key: juce-${{ hashFiles('CMakeLists.txt') }}
+          key: deps-${{ hashFiles('CMakeLists.txt') }}
       - run: cmake --preset windows
       - run: cmake --build --preset debug --target MetronomeTests
       - run: ctest --preset debug
