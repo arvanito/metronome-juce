@@ -4,13 +4,13 @@
     {
       "name": "windows",
       "displayName": "Windows (Ninja, MSVC)",
-      "description": "Build output lives outside OneDrive, in %LOCALAPPDATA%, so build files are not synced.",
+      "description": "Build output lives in %USERPROFILE%/.builds, outside OneDrive (so it is not synced) and outside AppData (which Windows redirects for packaged apps).",
       "generator": "Ninja Multi-Config",
-      "binaryDir": "$env{LOCALAPPDATA}/metronome-juce/build",
+      "binaryDir": "$env{USERPROFILE}/.builds/metronome-juce/build",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "cl",
         "CMAKE_CXX_COMPILER": "cl",
-        "FETCHCONTENT_BASE_DIR": "$env{LOCALAPPDATA}/metronome-juce/deps"
+        "FETCHCONTENT_BASE_DIR": "$env{USERPROFILE}/.builds/metronome-juce/deps"
       },
       "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
     }

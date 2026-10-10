@@ -46,9 +46,11 @@ build.cmd            :: debug build + tests
 build.cmd release    :: optimised build
 ```
 
-The app is at `%LOCALAPPDATA%\metronome-juce\build\Metronome_artefacts\<Debug|Release>\Metronome.exe`.
-Build output is kept outside the source folder (see [CMakePresets.json](CMakePresets.json)), so that
-OneDrive doesn't sync gigabytes of build files.
+The app is at `%USERPROFILE%\.builds\metronome-juce\build\Metronome_artefacts\<Debug|Release>\Metronome.exe`.
+It is a single self-contained file: double-click to run it, or copy it anywhere. Build output is
+kept outside the source folder (see [CMakePresets.json](CMakePresets.json)), so that OneDrive doesn't
+sync gigabytes of build files. It is also kept out of `AppData`, which Windows redirects for packaged
+apps such as the Claude desktop app.
 
 Updating the UI to the latest web app:
 

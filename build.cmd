@@ -19,4 +19,4 @@ cmake --build --preset %CONFIG% || exit /b 1
 if /i "%CONFIG%"=="debug" ctest --preset debug || exit /b 1
 
 echo.
-echo Built: %LOCALAPPDATA%\metronome-juce\build\Metronome_artefacts\%CONFIG%\Metronome.exe
+echo Built: %USERPROFILE%\.builds\metronome-juce\build\Metronome_artefacts\%CONFIG%\Metronome.exe

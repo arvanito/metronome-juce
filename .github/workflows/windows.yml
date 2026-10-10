@@ -10,9 +10,6 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-    env:
-      # CMakePresets.json builds under %LOCALAPPDATA%; keep that inside the workspace here.
-      LOCALAPPDATA: ${{ github.workspace }}\.local
     steps:
       - uses: actions/checkout@v7
         with:
@@ -23,7 +20,7 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1
       - uses: actions/cache@v6
         with:
-          path: .local/metronome-juce/deps
+          path: ~/.builds/metronome-juce/deps
           key: deps-${{ hashFiles('CMakeLists.txt') }}
       - run: cmake --preset windows
       - run: cmake --build --preset debug --target MetronomeTests
@@ -32,4 +29,4 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: Metronome-windows
-          path: .local/metronome-juce/build/Metronome_artefacts/Release/Metronome.exe
+          path: ~/.builds/metronome-juce/build/Metronome_artefacts/Release/Metronome.exe
