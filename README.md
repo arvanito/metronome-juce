@@ -31,6 +31,9 @@ engine** with sample-accurate timing. Windows comes first; Android is next.
 - **The bridge** ([`MainComponent`](Source/ui/MainComponent.cpp)) serves the embedded UI files to the
   WebView and passes messages both ways: settings, start/stop and "audio settings" come from the page,
   while heard beats, bars and trainer tempo changes go back to it.
+- **The tuner** stays in the page: it reads the microphone with Web Audio, in the app as in the
+  browser. The app lets its own page use the microphone without WebView2's website-style prompt;
+  Windows' microphone privacy setting still applies.
 
 ## Building (Windows)
 

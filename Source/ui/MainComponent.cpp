@@ -51,9 +51,23 @@ namespace
         return "beat";
     }
 
+    // The tuner reads the microphone from the page. WebView2 would ask "juce.backend wants to
+    // use your microphone" like a website does; the page is our own UI, so grant it as a native
+    // app would (Windows privacy settings still apply). JUCE has no option for browser
+    // arguments, so they go through the variable WebView2 reads when it starts.
+    void allowMediaWithoutPrompt()
+    {
+       #if JUCE_WINDOWS
+        constexpr auto name = "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS";
+        const auto args = (juce::SystemStats::getEnvironmentVariable (name, {}) + " --use-fake-ui-for-media-stream").trim();
+        _putenv_s (name, args.toRawUTF8());
+       #endif
+    }
+
     juce::WebBrowserComponent::Options browserOptions (std::function<void (const juce::var&)> onMessage,
                                                        juce::WebBrowserComponent::ResourceProvider provider)
     {
+        allowMediaWithoutPrompt();
         using Options = juce::WebBrowserComponent::Options;
         return Options {}
             .withBackend (Options::Backend::webview2)
